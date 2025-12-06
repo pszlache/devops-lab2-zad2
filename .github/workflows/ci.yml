@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ubuntu-22.04
+
     strategy:
       matrix:
         python-version: [3.12, 3.13]
@@ -30,31 +31,35 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache dependencies
+      - name: Cache pip
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: pip-${{ runner.os }}-${{ matrix.python-version }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            pip-${{ runner.os }}
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip
           pip install pytest
 
       - name: Run tests
-        run: pytest tests
+        run: pytest
 
       - name: Build artifact
         run: |
           mkdir -p dist
-          cp -r src/* dist/
+          if [ -d "src" ]; then
+            cp -r src/. dist/
+          else
+            echo "No src directory"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-dist
+          name: app-dist-python-${{ matrix.python-version }}
           path: dist/
 
       - name: Notify on failure
@@ -64,5 +69,5 @@ jobs:
         run: |
           curl -H "Content-Type: application/json" \
           -X POST \
-          -d "{\"content\": \"Build failed for $GITHUB_REPOSITORY\"}" \
+          -d "{\"content\": \"CI failed for $GITHUB_REPOSITORY on Python ${{ matrix.python-version }}\"}" \
           $WEBHOOK_URL
