@@ -1,1 +1,1 @@
-# devops-lab2-zad2
+# Zadanie numer 2 z zajęć DevOps - proste testy workflow z GitHub actions.
